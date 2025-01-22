@@ -65,34 +65,51 @@ PayloadDataParserInterface* FTP::FTPParser::ParsePayload(
     const uint8* startPtr = connPayload->location;
     const uint8* startline = connPayload->location;
     const uint8* endPtr   = connPayload->location + connPayload->size;
+    unsigned char* command = nullptr;
+    unsigned char* response = nullptr;
+
     
-    bool command = 0;
+    bool isACommand = 0;
     while (startPtr < endPtr) {
         if (*startPtr == 0x0D || *startPtr == 0x0a) {
             
             if (startPtr - startline > 0) {
-                unsigned char* sequence = new unsigned char[startPtr - startline];
-                std::memcpy(sequence, startline, startPtr - startline);
-                sequence[startPtr - startline + 1] = '\0';
-                startline                          = startPtr + 2;
-                if (memcmp(sequence, "USER", 4) == 0) {
-                    StreamTcpLayer layer = {};
-                    const char* name     = "Username: ";
-                    unsigned char* onlyName = sequence + 5;
 
-                    size_t nameLength         = std::strlen(name);
-                    size_t modifiedDataLength = std::strlen(reinterpret_cast<const char*>(onlyName));
-
-                    size_t totalLength = nameLength + modifiedDataLength + 1;
-                    char* concatenated = new char[totalLength];
-                    std::memcpy(concatenated, name, nameLength);
-                    std::memcpy(concatenated + nameLength, onlyName, modifiedDataLength);
-                    concatenated[totalLength - 1] = '\0';
-
-                    layer.name = std::make_unique<uint8[]>(strlen(concatenated) + 1);
-                    memcpy(layer.name.get(), concatenated, strlen(concatenated) + 1);
-                    applicationLayers.emplace_back(std::move(layer));
+                if (isACommand) {
+                    command = new unsigned char[startPtr - startline];
+                    std::memcpy(command, startline, startPtr - startline);
+                    command[startPtr - startline + 1] = '\0';
+                } else {
+                    response = new unsigned char[startPtr - startline];
+                    std::memcpy(response, startline, startPtr - startline);
+                    response[startPtr - startline + 1] = '\0';
                 }
+
+                startline                          = startPtr + 2;
+
+                if (!isACommand && command != nullptr) {
+                
+                    if (memcmp(command, "USER", 4) == 0) {
+                        StreamTcpLayer layer = {};
+                        const char* name     = "Username: ";
+                        unsigned char* onlyName = command + 5;
+
+                        size_t nameLength         = std::strlen(name);
+                        size_t modifiedDataLength = std::strlen(reinterpret_cast<const char*>(onlyName));
+
+                        size_t totalLength = nameLength + modifiedDataLength + 1;
+                        char* concatenated = new char[totalLength];
+                        std::memcpy(concatenated, name, nameLength);
+                        std::memcpy(concatenated + nameLength, onlyName, modifiedDataLength);
+                        concatenated[totalLength - 1] = '\0';
+
+                        layer.name = std::make_unique<uint8[]>(strlen(concatenated) + 1);
+                        memcpy(layer.name.get(), concatenated, strlen(concatenated) + 1);
+                        applicationLayers.emplace_back(std::move(layer));
+                    }
+                }
+
+                isACommand = 1 - isACommand;
 
             }
         
