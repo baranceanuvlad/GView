@@ -47,6 +47,28 @@ const char* appendToUnsignedChar(unsigned char*& buffer, const char* newData)
     return reinterpret_cast<const char*>(newBuffer);
 }
 
+
+const char* appendUnsignedCharToConstChar(const char* str1, const unsigned char* str2)
+{
+    size_t len1 = std::strlen(str1);
+    size_t len2 = std::strlen(reinterpret_cast<const char*>(str2));
+    char* combined = new char[len1 + len2 + 1];
+
+    std::strcpy(combined, str1);
+    std::strcat(combined, reinterpret_cast<const char*>(str2));
+    return combined;
+}
+
+const char* appendConstChar(const char* str1, const char* str2)
+{
+    size_t len1 = std::strlen(str1);
+    size_t len2 = std::strlen(str2);
+    char* combined = new char[len1 + len2 + 1];
+    std::strcpy(combined, str1);
+    std::strcat(combined, str2);
+    return combined;
+}
+
 bool searchIfCommandExists(const unsigned char* input, const std::unordered_map<std::string, std::string>& map)
 {
     const unsigned char* spacePos = reinterpret_cast<const unsigned char*>(std::strpbrk(reinterpret_cast<const char*>(input), " \r"));
@@ -201,6 +223,86 @@ PayloadDataParserInterface* FTP::FTPParser::ParsePayload(
                         message2              = appendToUnsignedChar(opsys, message2);
                         appendToUnsignedChar(summary, summary_size, message2);
 
+                    }
+
+                    if (memcmp(command, "CWD", 3) == 0) {
+                        if (memcmp(response, "250", 3) == 0) {
+                            const char* message = " has changed the working directory to ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 4);
+                            message             = appendConstChar(message, "\n");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "450", 3) == 0) {
+                            const char* message = " has tried to change the working directory to";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 4);
+                            message             = appendConstChar(message, " but the action has not been taken\n");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "550", 3) == 0) {
+                            const char* message = " has tried to change the working directory to";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 4);
+                            message             = appendConstChar(message, " but the action has not been taken due to folder not found or no access\n");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                    }
+
+                     if (memcmp(command, "PWD", 3) == 0 and memcmp(response, "257", 3) == 0) {
+                        const char* message = " has asked for the server to print the current directory: ";
+                        message             = appendToUnsignedChar(username, message);
+                        message             = appendUnsignedCharToConstChar(message, response + 4);
+                        message             = appendConstChar(message, "\n\0");
+                        appendToUnsignedChar(summary, summary_size, message);
+                    }
+
+                     if (memcmp(command, "TYPE", 4) == 0) {
+                        if (memcmp(response, "200", 3) == 0) {
+                            const char* message = " has set the file transfer mode ";
+                            message             = appendToUnsignedChar(username, message);
+                            if (*(command + 5) == 'A') {
+                                message = appendConstChar(message, " ASCII ");
+                            }
+                            if (*(command + 5) == 'E') {
+                                message = appendConstChar(message, " EBCDIC ");
+                            }
+                            if (*(command + 5) == 'I') {
+                                message = appendConstChar(message, " IMAGE ");
+                            }
+                            if (*(command + 5) == 'L') {
+                                message = appendConstChar(message, " Local byte ");
+                            }
+                            if (std::strlen(reinterpret_cast<const char*>(command)) < 7 || *(command + 7) == 'N') {
+                                message = appendConstChar(message, " with Byte Size Non-print\n\0");
+                            } else {
+                                if (*(command + 7) == 'T')
+                                    message = appendConstChar(message, " with Byte Size Telnet format effectors\n\0");
+                                else if (*(command + 7) == 'C')
+                                    message = appendConstChar(message, " with Byte Size Carriage Control\n\0");
+                                else 
+                                    message = appendUnsignedCharToConstChar(message, command + 7);
+
+                            }
+
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                    }
+
+                     if (memcmp(command, "RETR", 4) == 0) {
+                        const char* message = " has requested the server to transfer the file from the following path: ";
+                        message             = appendToUnsignedChar(username, message);
+                        message             = appendUnsignedCharToConstChar(message, command + 5);
+                        if (memcmp(response, "125", 3) == 0) {
+                            message = appendConstChar(message, " and the transfer started \n\0");
+                        }
+                        if (memcmp(response, "450", 3) == 0) {
+                            message = appendConstChar(message, " but the file is busy \n\0");
+                        }
+                        if (memcmp(response, "550", 3) == 0) {
+                            message = appendConstChar(message, " but the file is unavailable \n\0");
+                        }
+                        appendToUnsignedChar(summary, summary_size, message);
                     }
 
                     /*
