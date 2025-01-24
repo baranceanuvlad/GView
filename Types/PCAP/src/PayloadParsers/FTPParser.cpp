@@ -143,15 +143,22 @@ PayloadDataParserInterface* FTP::FTPParser::ParsePayload(
 
     
     bool isACommand = 0;
-    while (startPtr < endPtr) {
+    for (; startPtr < endPtr; startPtr++) {
         if (*startPtr == 0x0D || *startPtr == 0x0a) {
             
             if (startPtr - startline > 0) {
 
                 if (isACommand) {
+                    if (*startline - '0' >= 0 and *startline - '0' <= 9) {
+                        response = new unsigned char[startPtr - startline];
+                        std::memcpy(response, startline, startPtr - startline);
+                        response[startPtr - startline] = '\0';
+                        isACommand                     = 0;
+                    } else {
                     command = new unsigned char[startPtr - startline];
                     std::memcpy(command, startline, startPtr - startline);
                     command[startPtr - startline] = '\0';
+                    }
                 } else {
                     response = new unsigned char[startPtr - startline];
                     std::memcpy(response, startline, startPtr - startline);
@@ -323,7 +330,6 @@ PayloadDataParserInterface* FTP::FTPParser::ParsePayload(
             }
         
         }
-        startPtr++;
     }
 
 
