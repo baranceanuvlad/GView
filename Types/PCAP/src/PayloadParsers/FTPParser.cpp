@@ -20,7 +20,7 @@ void appendToUnsignedChar(unsigned char*& buffer, size_t& currentSize, const uns
 
 void appendToUnsignedChar(unsigned char*& buffer, size_t& currentSize, const char* newData)
 {
-    size_t newDataSize = std::strlen(newData);
+    size_t newDataSize       = std::strlen(newData);
     size_t newSize           = currentSize + newDataSize;
     unsigned char* newBuffer = new unsigned char[newSize];
     if (currentSize > 0) {
@@ -34,10 +34,10 @@ void appendToUnsignedChar(unsigned char*& buffer, size_t& currentSize, const cha
 
 const char* appendToUnsignedChar(unsigned char*& buffer, const char* newData)
 {
-    size_t currentSize = buffer ? std::strlen(reinterpret_cast<const char*>(buffer)) : 0;
-    size_t newDataSize = std::strlen(newData);
+    size_t currentSize       = buffer ? std::strlen(reinterpret_cast<const char*>(buffer)) : 0;
+    size_t newDataSize       = std::strlen(newData);
     size_t newSize           = currentSize + newDataSize;
-    unsigned char* newBuffer = new unsigned char[newSize + 1]; 
+    unsigned char* newBuffer = new unsigned char[newSize + 1];
 
     if (currentSize > 0) {
         std::memcpy(newBuffer, buffer, currentSize);
@@ -47,11 +47,10 @@ const char* appendToUnsignedChar(unsigned char*& buffer, const char* newData)
     return reinterpret_cast<const char*>(newBuffer);
 }
 
-
 const char* appendUnsignedCharToConstChar(const char* str1, const unsigned char* str2)
 {
-    size_t len1 = std::strlen(str1);
-    size_t len2 = std::strlen(reinterpret_cast<const char*>(str2));
+    size_t len1    = std::strlen(str1);
+    size_t len2    = std::strlen(reinterpret_cast<const char*>(str2));
     char* combined = new char[len1 + len2 + 1];
 
     std::strcpy(combined, str1);
@@ -61,8 +60,8 @@ const char* appendUnsignedCharToConstChar(const char* str1, const unsigned char*
 
 const char* appendConstChar(const char* str1, const char* str2)
 {
-    size_t len1 = std::strlen(str1);
-    size_t len2 = std::strlen(str2);
+    size_t len1    = std::strlen(str1);
+    size_t len2    = std::strlen(str2);
     char* combined = new char[len1 + len2 + 1];
     std::strcpy(combined, str1);
     std::strcat(combined, str2);
@@ -80,8 +79,7 @@ bool searchIfCommandExists(const unsigned char* input, const std::unordered_map<
     return map.find(key) != map.end();
 }
 
-PayloadDataParserInterface* FTP::FTPParser::ParsePayload(
-      const PayloadInformation& payloadInformation, ConnectionCallbackInterface* callbackInterface)
+PayloadDataParserInterface* FTP::FTPParser::ParsePayload(const PayloadInformation& payloadInformation, ConnectionCallbackInterface* callbackInterface)
 {
     const auto connPayload = payloadInformation.payload;
     if (payloadInformation.payload->size < 10)
@@ -89,8 +87,7 @@ PayloadDataParserInterface* FTP::FTPParser::ParsePayload(
 
     auto& var = payloadInformation.payload->location;
     if (memcmp(payloadInformation.payload->location, "220", 3) != 0 && memcmp(payloadInformation.payload->location, "120", 3) != 0 &&
-              memcmp(payloadInformation.payload->location,
-        "421", 3) != 0 && memcmp(payloadInformation.payload->location, "221", 3) != 0)
+        memcmp(payloadInformation.payload->location, "421", 3) != 0 && memcmp(payloadInformation.payload->location, "221", 3) != 0)
         return nullptr;
 
     uint32 src = 0;
@@ -106,14 +103,12 @@ PayloadDataParserInterface* FTP::FTPParser::ParsePayload(
             }
         }
 
-        if (packet.payload.size > 0) //current payload has payload
+        if (packet.payload.size > 0) // current payload has payload
         {
             //..
             packet.payload.location;
         }
     }
-
-    
 
     callbackInterface->AddConnectionSummary("FTP initial connection");
     callbackInterface->AddConnectionAppLayerName("FTP");
@@ -122,7 +117,7 @@ PayloadDataParserInterface* FTP::FTPParser::ParsePayload(
 
     StreamTcpLayer layer = {};
     const char* name     = "DemoLayer";
-    layer.name = std::make_unique<uint8[]>(strlen(name) +1);
+    layer.name           = std::make_unique<uint8[]>(strlen(name) + 1);
     memcpy(layer.name.get(), name, strlen(name) + 1);
     applicationLayers.emplace_back(std::move(layer));
 
@@ -131,23 +126,19 @@ PayloadDataParserInterface* FTP::FTPParser::ParsePayload(
     summaryLayer.name           = std::make_unique<uint8[]>(strlen(name2) + 1);
     memcpy(summaryLayer.name.get(), name2, strlen(name2) + 1);
 
-    
-    const uint8* startPtr = connPayload->location;
-    const uint8* startline = connPayload->location;
-    const uint8* endPtr   = connPayload->location + connPayload->size;
-    unsigned char* command = nullptr;
+    const uint8* startPtr   = connPayload->location;
+    const uint8* startline  = connPayload->location;
+    const uint8* endPtr     = connPayload->location + connPayload->size;
+    unsigned char* command  = nullptr;
     unsigned char* response = nullptr;
     unsigned char* summary  = nullptr;
     size_t summary_size     = 0;
     unsigned char* username = nullptr;
 
-    
     bool isACommand = 0;
     for (; startPtr < endPtr; startPtr++) {
         if (*startPtr == 0x0D || *startPtr == 0x0a) {
-            
             if (startPtr - startline > 0) {
-
                 if (isACommand) {
                     if (*startline - '0' >= 0 and *startline - '0' <= 9) {
                         response = new unsigned char[startPtr - startline];
@@ -155,9 +146,9 @@ PayloadDataParserInterface* FTP::FTPParser::ParsePayload(
                         response[startPtr - startline] = '\0';
                         isACommand                     = 0;
                     } else {
-                    command = new unsigned char[startPtr - startline];
-                    std::memcpy(command, startline, startPtr - startline);
-                    command[startPtr - startline] = '\0';
+                        command = new unsigned char[startPtr - startline];
+                        std::memcpy(command, startline, startPtr - startline);
+                        command[startPtr - startline] = '\0';
                     }
                 } else {
                     response = new unsigned char[startPtr - startline];
@@ -165,11 +156,9 @@ PayloadDataParserInterface* FTP::FTPParser::ParsePayload(
                     response[startPtr - startline] = '\0';
                 }
 
-                startline                          = startPtr + 2;
+                startline = startPtr + 2;
 
                 if (!isACommand && command != nullptr) {
-
-                
                     if (memcmp(command, "USER", 4) == 0) {
                         username = command + 5;
 
@@ -184,7 +173,6 @@ PayloadDataParserInterface* FTP::FTPParser::ParsePayload(
                             message             = appendToUnsignedChar(username, message);
                             appendToUnsignedChar(summary, summary_size, message);
                         }
-
                     }
 
                     if (memcmp(command, "PASS", 4) == 0) {
@@ -221,15 +209,14 @@ PayloadDataParserInterface* FTP::FTPParser::ParsePayload(
                         appendToUnsignedChar(summary, summary_size, message);
                     }
 
-                    if (memcmp(command, "SYST", 4) == 0 and memcmp(response,"215",3) == 0) {
+                    if (memcmp(command, "SYST", 4) == 0 and memcmp(response, "215", 3) == 0) {
                         const char* message = " has asked for the operating system at the server\n";
                         message             = appendToUnsignedChar(username, message);
                         appendToUnsignedChar(summary, summary_size, message);
                         unsigned char* opsys = response + 4;
-                        const char* message2  = " is the operating system at the server\n";
-                        message2              = appendToUnsignedChar(opsys, message2);
+                        const char* message2 = " is the operating system at the server\n";
+                        message2             = appendToUnsignedChar(opsys, message2);
                         appendToUnsignedChar(summary, summary_size, message2);
-
                     }
 
                     if (memcmp(command, "CWD", 3) == 0) {
@@ -256,7 +243,7 @@ PayloadDataParserInterface* FTP::FTPParser::ParsePayload(
                         }
                     }
 
-                     if (memcmp(command, "PWD", 3) == 0 and memcmp(response, "257", 3) == 0) {
+                    if (memcmp(command, "PWD", 3) == 0 and memcmp(response, "257", 3) == 0) {
                         const char* message = " has asked for the server to print the current directory: ";
                         message             = appendToUnsignedChar(username, message);
                         message             = appendUnsignedCharToConstChar(message, response + 4);
@@ -264,7 +251,7 @@ PayloadDataParserInterface* FTP::FTPParser::ParsePayload(
                         appendToUnsignedChar(summary, summary_size, message);
                     }
 
-                     if (memcmp(command, "TYPE", 4) == 0) {
+                    if (memcmp(command, "TYPE", 4) == 0) {
                         if (memcmp(response, "200", 3) == 0) {
                             const char* message = " has set the file transfer mode ";
                             message             = appendToUnsignedChar(username, message);
@@ -287,16 +274,15 @@ PayloadDataParserInterface* FTP::FTPParser::ParsePayload(
                                     message = appendConstChar(message, " with Byte Size Telnet format effectors\n\0");
                                 else if (*(command + 7) == 'C')
                                     message = appendConstChar(message, " with Byte Size Carriage Control\n\0");
-                                else 
+                                else
                                     message = appendUnsignedCharToConstChar(message, command + 7);
-
                             }
 
                             appendToUnsignedChar(summary, summary_size, message);
                         }
                     }
 
-                     if (memcmp(command, "RETR", 4) == 0) {
+                    if (memcmp(command, "RETR", 4) == 0) {
                         const char* message = " has requested the server to transfer the file from the following path: ";
                         message             = appendToUnsignedChar(username, message);
                         message             = appendUnsignedCharToConstChar(message, command + 5);
@@ -310,6 +296,229 @@ PayloadDataParserInterface* FTP::FTPParser::ParsePayload(
                             message = appendConstChar(message, " but the file is unavailable \n\0");
                         }
                         appendToUnsignedChar(summary, summary_size, message);
+                    }
+
+                    if (memcmp(command, "ABOR", 4) == 0) {
+                        if (memcmp(response, "225", 3) == 0) {
+                            const char* message = " has successfully aborted the previous FTP command, data connection is open\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "226", 3) == 0) {
+                            const char* message = " has successfully aborted the previous FTP command\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "500", 3) == 0) {
+                            const char* message = " has attempted to abort the previous FTP command, but it failed due to syntax error\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "501", 3) == 0) {
+                            const char* message = " has attempted to abort the previous FTP command, but it failed due to parameter issues\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "502", 3) == 0) {
+                            const char* message = " has attempted to abort the previous FTP command, but the command is not implemented\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "421", 3) == 0) {
+                            const char* message = " has attempted to abort the previous FTP command, but the service is not available\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                    }
+
+                    if (memcmp(command, "ALLO", 4) == 0) {
+                        if (memcmp(response, "200", 3) == 0) {
+                            const char* message = " has allocated sufficient storage for the FTP operation\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "202", 3) == 0) {
+                            const char* message = " has attempted to allocate storage, but the command is not necessary\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "500", 3) == 0) {
+                            const char* message = " has attempted to allocate storage, but it failed due to syntax error\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "501", 3) == 0) {
+                            const char* message = " has attempted to allocate storage, but it failed due to parameter issues\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "504", 3) == 0) {
+                            const char* message = " has attempted to allocate storage, but the command is not implemented for the parameter provided\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "421", 3) == 0) {
+                            const char* message = " has attempted to allocate storage, but the service is not available\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "530", 3) == 0) {
+                            const char* message = " has attempted to allocate storage, but not logged in\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                    }
+
+                    if (memcmp(command, "HELP", 4) == 0) {
+                        if (memcmp(response, "211", 3) == 0) {
+                            const char* message = " has requested system help information and received a valid response. Server response: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, response + 4);
+                            message             = appendConstChar(message, "\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "214", 3) == 0) {
+                            const char* message = " has requested help information and received a valid response. Server response: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, response + 4);
+                            message             = appendConstChar(message, "\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "500", 3) == 0) {
+                            const char* message = " has requested help, but it failed due to syntax error\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "501", 3) == 0) {
+                            const char* message = " has requested help, but it failed due to parameter issues\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "502", 3) == 0) {
+                            const char* message = " has requested help, but the command is not implemented\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "421", 3) == 0) {
+                            const char* message = " has requested help, but the service is not available\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                    }
+
+                    if (memcmp(command, "NOOP", 4) == 0) {
+                        if (memcmp(response, "200", 3) == 0) {
+                            const char* message = " has issued a NOOP command, which succeeded\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "500", 3) == 0) {
+                            const char* message = " has issued a NOOP command, but it failed due to syntax error\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "421", 3) == 0) {
+                            const char* message = " has issued a NOOP command, but the service is not available\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                    }
+
+                    if (memcmp(command, "PASV", 4) == 0) {
+                        if (memcmp(response, "227", 3) == 0) {
+                            const char* message = " has successfully entered passive mode. Server response: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, response + 4);
+                            message             = appendConstChar(message, "\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "500", 3) == 0) {
+                            const char* message = " has attempted to enter passive mode, but it failed due to syntax error\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "501", 3) == 0) {
+                            const char* message = " has attempted to enter passive mode, but it failed due to parameter issues\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "502", 3) == 0) {
+                            const char* message = " has attempted to enter passive mode, but the command is not implemented\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "421", 3) == 0) {
+                            const char* message = " has attempted to enter passive mode, but the service is not available\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "530", 3) == 0) {
+                            const char* message = " has attempted to enter passive mode, but not logged in\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                    }
+
+                    if (memcmp(command, "PORT", 4) == 0) {
+                        if (memcmp(response, "200", 3) == 0) {
+                            const char* message = " has successfully specified the data connection port: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, "\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "500", 3) == 0) {
+                            const char* message = " has issued a PORT command, but it failed due to syntax error\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "501", 3) == 0) {
+                            const char* message = " has issued a PORT command, but it failed due to parameter issues\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "421", 3) == 0) {
+                            const char* message = " has issued a PORT command, but the service is not available\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "530", 3) == 0) {
+                            const char* message = " has issued a PORT command, but not logged in\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                    }
+
+                    if (memcmp(command, "QUIT", 4) == 0) {
+                        if (memcmp(response, "221", 3) == 0) {
+                            const char* message = " has logged out and disconnected from the FTP server\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "500", 3) == 0) {
+                            const char* message = " has attempted to log out, but it failed due to syntax error\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                    }
+
+                    if (memcmp(command, "MDTM", 4) == 0) {
+                        if (memcmp(response, "213", 3) == 0) {
+                            const char* message = " has requested the last modification time of the file '";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, "'. Server response: ");
+                            message             = appendUnsignedCharToConstChar(message, response + 4);
+                            message             = appendConstChar(message, "\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "550", 3) == 0) {
+                            const char* message = " has tried to request the last modification time of the file '";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, "', but the file was not found.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
                     }
 
                     /*
@@ -326,12 +535,9 @@ PayloadDataParserInterface* FTP::FTPParser::ParsePayload(
                 }
 
                 isACommand = 1 - isACommand;
-
             }
-        
         }
     }
-
 
     summaryLayer.payload.size     = strlen(reinterpret_cast<const char*>(summary)) + 1;
     summaryLayer.payload.location = new uint8[summaryLayer.payload.size + 1];
