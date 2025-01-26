@@ -1328,6 +1328,64 @@ PayloadDataParserInterface* FTP::FTPParser::ParsePayload(const PayloadInformatio
                             appendToUnsignedChar(summary, summary_size, message);
                         }
                     }
+                    if (memcmp(command, "FEAT", 4) == 0) {
+                        if (memcmp(response, "211", 3) == 0 || memcmp(response, "214", 3) == 0) {
+                            const char* message = " has requested the feature list and received: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, response + 4);
+                            message             = appendConstChar(message, "\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+
+                            const unsigned char* startPtr = response + 4;
+                            const unsigned char* endPtr   = response + std::strlen(reinterpret_cast<const char*>(response));
+                            while (startPtr < endPtr) {
+                                const unsigned char* lineEnd =
+                                      reinterpret_cast<const unsigned char*>(std::strchr(reinterpret_cast<const char*>(startPtr), '\n'));
+                                if (!lineEnd)
+                                    break;
+
+                                size_t featureLength = lineEnd - startPtr;
+                                if (featureLength > 0) {
+                                    std::string feature(reinterpret_cast<const char*>(startPtr), featureLength);
+
+                                    if (feature.find("TVFS") != std::string::npos) {
+                                        const char* tvfsMessage = " The server supports TVFS (Trivial Virtual File Store).\n\0";
+                                        appendToUnsignedChar(summary, summary_size, tvfsMessage);
+                                    } else if (feature.find("UTF8") != std::string::npos) {
+                                        const char* utf8Message = " The server supports UTF8 encoding for file names.\n\0";
+                                        appendToUnsignedChar(summary, summary_size, utf8Message);
+                                    } else if (feature.find("MDTM") != std::string::npos) {
+                                        const char* mdtmMessage = " The server supports MDTM (Modify Fact Timestamp).\n\0";
+                                        appendToUnsignedChar(summary, summary_size, mdtmMessage);
+                                    } else if (feature.find("REST STREAM") != std::string::npos) {
+                                        const char* restMessage = " The server supports REST STREAM for restarting interrupted transfers.\n\0";
+                                        appendToUnsignedChar(summary, summary_size, restMessage);
+                                    } else if (feature.find("SIZE") != std::string::npos) {
+                                        const char* sizeMessage = " The server supports SIZE command to retrieve file sizes.\n\0";
+                                        appendToUnsignedChar(summary, summary_size, sizeMessage);
+                                    } else {
+                                        std::string genericFeatureMessage = " The server supports the feature: " + feature + ".\n";
+                                        appendToUnsignedChar(summary, summary_size, genericFeatureMessage.c_str());
+                                    }
+                                }
+
+                                startPtr = lineEnd + 1;
+                            }
+                        } else if (memcmp(response, "500", 3) == 0) {
+                            const char* message = " has requested the feature list, but it failed due to syntax error.\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        } else if (memcmp(response, "502", 3) == 0) {
+                            const char* message = " has requested the feature list, but the command is not implemented.\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        } else if (memcmp(response, "421", 3) == 0) {
+                            const char* message = " has requested the feature list, but the service is not available.\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                    }
+
 
                     /*
                     if (!searchIfCommandExists(command, ftp_transfer_parameter_commands) && !searchIfCommandExists(command, ftp_access_control_commands) &&
