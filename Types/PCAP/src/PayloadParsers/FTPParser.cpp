@@ -937,6 +937,398 @@ PayloadDataParserInterface* FTP::FTPParser::ParsePayload(const PayloadInformatio
                     }
 
 
+                    if (memcmp(command, "CDUP", 4) == 0) {
+                        if (memcmp(response, "250", 3) == 0) {
+                            const char* message = " has successfully changed to the parent of the current working directory\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "500", 3) == 0) {
+                            const char* message = " has issued a CDUP command, but it failed due to syntax error\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "501", 3) == 0) {
+                            const char* message = " has issued a CDUP command, but it failed due to parameter issues\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "502", 3) == 0) {
+                            const char* message = " has issued a CDUP command, but the command is not implemented\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "421", 3) == 0) {
+                            const char* message = " has issued a CDUP command, but the service is not available\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "530", 3) == 0) {
+                            const char* message = " has issued a CDUP command, but not logged in\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "550", 3) == 0) {
+                            const char* message = " has issued a CDUP command, but permission is denied or directory does not exist\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                    }
+
+                    if (memcmp(command, "DELE", 4) == 0) {
+                        if (memcmp(response, "250", 3) == 0) {
+                            const char* message = " has successfully deleted the file: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, "\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "450", 3) == 0) {
+                            const char* message = " has tried to delete the file: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, " but the file is in use or unavailable\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "500", 3) == 0) {
+                            const char* message = " has tried to delete the file: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, " but the command failed due to syntax error\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "501", 3) == 0) {
+                            const char* message = " has tried to delete the file: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, " but the command failed due to parameter issues\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "502", 3) == 0) {
+                            const char* message = " has tried to delete the file: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, " but the command is not implemented\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "421", 3) == 0) {
+                            const char* message = " has tried to delete the file: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, " but the service is not available\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "530", 3) == 0) {
+                            const char* message = " has tried to delete the file: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, " but not logged in\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "550", 3) == 0) {
+                            const char* message = " has tried to delete the file: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, " but permission is denied or the file does not exist\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                    }
+
+                    if (memcmp(command, "MKD", 3) == 0) {
+                        if (memcmp(response, "257", 3) == 0) {
+                            const char* message = " has successfully created the directory: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 4);
+                            message             = appendConstChar(message, "\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "500", 3) == 0) {
+                            const char* message = " has tried to create the directory: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 4);
+                            message             = appendConstChar(message, " but the command failed due to syntax error\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "501", 3) == 0) {
+                            const char* message = " has tried to create the directory: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 4);
+                            message             = appendConstChar(message, " but the command failed due to parameter issues\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "502", 3) == 0) {
+                            const char* message = " has tried to create the directory: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 4);
+                            message             = appendConstChar(message, " but the command is not implemented\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "421", 3) == 0) {
+                            const char* message = " has tried to create the directory: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 4);
+                            message             = appendConstChar(message, " but the service is not available\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "530", 3) == 0) {
+                            const char* message = " has tried to create the directory: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 4);
+                            message             = appendConstChar(message, " but not logged in\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "550", 3) == 0) {
+                            const char* message = " has tried to create the directory: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 4);
+                            message             = appendConstChar(message, " but permission is denied or the directory already exist\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                    }
+
+                    if (memcmp(command, "RMD", 3) == 0) {
+                        if (memcmp(response, "250", 3) == 0) {
+                            const char* message = " has successfully deleted the directory: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 4);
+                            message             = appendConstChar(message, "\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "500", 3) == 0) {
+                            const char* message = " has tried to delete the directory: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 4);
+                            message             = appendConstChar(message, " but the command failed due to syntax error\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "501", 3) == 0) {
+                            const char* message = " has tried to delete the directory: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 4);
+                            message             = appendConstChar(message, " but the command failed due to parameter issues\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "502", 3) == 0) {
+                            const char* message = " has tried to delete the directory: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 4);
+                            message             = appendConstChar(message, " but the command is not implemented\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "421", 3) == 0) {
+                            const char* message = " has tried to delete the directory: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 4);
+                            message             = appendConstChar(message, " but the service is not available\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "530", 3) == 0) {
+                            const char* message = " has tried to delete the directory: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 4);
+                            message             = appendConstChar(message, " but not logged in\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "550", 3) == 0) {
+                            const char* message = " has tried to delete the directory: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 4);
+                            message             = appendConstChar(message, " but permission is denied or the directory does not exist\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                    }
+
+                    if (memcmp(command, "SMNT", 4) == 0) {
+                        if (memcmp(response, "250", 3) == 0) {
+                            const char* message = " has successfully mounted or changed the directory: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, " on the server\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "500", 3) == 0) {
+                            const char* message = " has tried to mount the directory: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, " but the command failed due to syntax error\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "501", 3) == 0) {
+                            const char* message = " has tried to mount the directory: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, " but the command failed due to parameter issues\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "502", 3) == 0) {
+                            const char* message = " has tried to mount the directory: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, " but the command is not implemented\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "421", 3) == 0) {
+                            const char* message = " has tried to mount the directory: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, " but the service is not available\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "530", 3) == 0) {
+                            const char* message = " has tried to mount the directory: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, " but not logged in\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "550", 3) == 0) {
+                            const char* message = " has tried to mount the directory: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, " but permission is denied or the directory does not exist\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                    }
+
+                    if (memcmp(command, "MODE", 4) == 0) {
+                        const unsigned char* mode_type;
+                        switch (*(command + 5)) {
+                        case 'S':
+                            mode_type = reinterpret_cast<const unsigned char*>("stream");
+                            break;
+                        case 'B':
+                            mode_type = reinterpret_cast<const unsigned char*>("block");
+                            break;
+                        case 'C':
+                            mode_type = reinterpret_cast<const unsigned char*>("compressed");
+                            break;
+                        default:
+                            break;
+                        }
+                        if (memcmp(response, "200", 3) == 0) {
+                            const char* message = " has successfully set the transfer mode for file transfers to: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, mode_type);
+                            message             = appendConstChar(message, "\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "500", 3) == 0) {
+                            const char* message = " has tried to set the transfer mode for file transfers to: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, mode_type);
+                            message             = appendConstChar(message, " but the command failed due to syntax error\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "501", 3) == 0) {
+                            const char* message = " has tried to set the transfer mode for file transfers to: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, mode_type);
+                            message             = appendConstChar(message, " but the command failed due to parameter issues\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "502", 3) == 0) {
+                            const char* message = " has tried to set the transfer mode for file transfers to: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, mode_type);
+                            message             = appendConstChar(message, " but the command is not implemented\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "530", 3) == 0) {
+                            const char* message = " has tried to set the transfer mode for file transfers to: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, mode_type);
+                            message             = appendConstChar(message, " but not logged in\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "504", 3) == 0) {
+                            const char* message = " has tried to set the transfer mode for file transfers to: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, mode_type);
+                            message             = appendConstChar(message, " but the command is not implemented for that parameter\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                    }
+
+                    if (memcmp(command, "REIN", 4) == 0) {
+                        if (memcmp(response, "220", 3) == 0) {
+                            const char* message = " has successfully reset the session and is now ready for a new login or interaction\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "500", 3) == 0) {
+                            const char* message = " has tried to reset the session but the command failed due to syntax error\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "502", 3) == 0) {
+                            const char* message = " has tried to reset the session but the command is not implemented\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "530", 3) == 0) {
+                            const char* message = " has tried to reset the session but not logged in\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "421", 3) == 0) {
+                            const char* message = " has tried to reset the session but the service is not available\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }                  
+                    }
+
+                    if (memcmp(command, "REST", 4) == 0) {
+                        if (memcmp(response, "350", 3) == 0) {
+                            const char* message = " has successfully set the restart point for a file transfer to byte: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, "\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "500", 3) == 0) {
+                            const char* message = " has tried to set the restart point for a file transfer to byte: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, " but the command failed due to syntax error\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "501", 3) == 0) {
+                            const char* message = " has tried to set the restart point for a file transfer to byte: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, " but the command failed due to parameter issues\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "502", 3) == 0) {
+                            const char* message = " has tried to set the restart point for a file transfer to byte: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, " but the command is not implemented\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "421", 3) == 0) {
+                            const char* message = " has tried to set the restart point for a file transfer to byte: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, " but the service is not available\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "530", 3) == 0) {
+                            const char* message = " has tried to set the restart point for a file transfer to byte: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, " but not logged in\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "550", 3) == 0) {
+                            const char* message = " has tried to set the restart point for a file transfer to byte: ";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, " but permission is denied or the file is not available\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                    }
+
                     /*
                     if (!searchIfCommandExists(command, ftp_transfer_parameter_commands) && !searchIfCommandExists(command, ftp_access_control_commands) &&
                         !searchIfCommandExists(command, ftp_service_commands)) {
