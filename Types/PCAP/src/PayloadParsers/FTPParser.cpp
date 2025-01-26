@@ -128,14 +128,22 @@ PayloadDataParserInterface* FTP::FTPParser::ParsePayload(const PayloadInformatio
     summaryLayer.name           = std::make_unique<uint8[]>(strlen(name2) + 1);
     memcpy(summaryLayer.name.get(), name2, strlen(name2) + 1);
 
-    const uint8* startPtr   = connPayload->location;
-    const uint8* startline  = connPayload->location;
-    const uint8* endPtr     = connPayload->location + connPayload->size;
-    unsigned char* command  = nullptr;
-    unsigned char* response = nullptr;
-    unsigned char* summary  = nullptr;
-    size_t summary_size     = 0;
-    unsigned char* username = nullptr;
+    StreamTcpLayer size_layer = {};
+    const char* name_size     = "Size of files";
+    size_layer.name           = std::make_unique<uint8[]>(strlen(name_size) + 1);
+    memcpy(size_layer.name.get(), name_size, strlen(name_size) + 1);
+    std::map<unsigned char*, unsigned char*> map_size;
+
+    const uint8* startPtr    = connPayload->location;
+    const uint8* startline   = connPayload->location;
+    const uint8* endPtr      = connPayload->location + connPayload->size;
+    unsigned char* command   = nullptr;
+    unsigned char* response  = nullptr;
+    unsigned char* summary   = nullptr;
+    unsigned char* size_file = nullptr; 
+    size_t summary_size      = 0;
+    size_t size_file_size    = 0;
+    unsigned char* username  = nullptr;
     std::map<unsigned char *, std::string> filesDownloaded;
 
     bool isACommand = 0;
@@ -684,6 +692,20 @@ PayloadDataParserInterface* FTP::FTPParser::ParsePayload(const PayloadInformatio
                             message             = appendToUnsignedChar(username, message);
                             message             = appendUnsignedCharToConstChar(message, command + 5);
                             message             = appendConstChar(message, "', but the file was not found.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "500", 3) == 0) {
+                            const char* message = " has tried to request the last modification time of the file '";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, "', but the command was not understood by the server.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "501", 3) == 0) {
+                            const char* message = " has tried to request the last modification time of the file '";
+                            message             = appendToUnsignedChar(username, message);
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, "', but the command syntax was invalid.\n\0");
                             appendToUnsignedChar(summary, summary_size, message);
                         }
                     }
@@ -1551,6 +1573,384 @@ PayloadDataParserInterface* FTP::FTPParser::ParsePayload(const PayloadInformatio
                         }
                     }
 
+                    if (memcmp(command, "STRU", 4) == 0) {
+                        if (memcmp(response, "200", 3) == 0) {
+                            const char* message = " has successfully set the file structure\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "500", 3) == 0) {
+                            const char* message = " has tried to set the file structure but the command failed due to a syntax error\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "501", 3) == 0) {
+                            const char* message = " has tried to set the file structure but the command failed due to a parameter syntax error\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "504", 3) == 0) {
+                            const char* message = " has tried to set the file structure but the command failed as the parameter is not implemented\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "421", 3) == 0) {
+                            const char* message = " has tried to set the file structure but the service is not available\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "530", 3) == 0) {
+                            const char* message = " has tried to set the file structure but is not logged in\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                    }
+
+                    if (memcmp(command, "STAT", 4) == 0) {
+                        if (memcmp(response, "211", 3) == 0) {
+                            const char* message = " has successfully retrieved the system status or help reply\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "212", 3) == 0) {
+                            const char* message = " has successfully retrieved the directory status\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "213", 3) == 0) {
+                            const char* message = " has successfully retrieved the file status\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "450", 3) == 0) {
+                            const char* message = " has tried to retrieve the status but the requested file action was not taken\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "500", 3) == 0) {
+                            const char* message = " has tried to retrieve the status but the command failed due to a syntax error\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "501", 3) == 0) {
+                            const char* message = " has tried to retrieve the status but the command failed due to a parameter syntax error\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "502", 3) == 0) {
+                            const char* message = " has tried to retrieve the status but the command is not implemented\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "421", 3) == 0) {
+                            const char* message = " has tried to retrieve the status but the service is not available\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "530", 3) == 0) {
+                            const char* message = " has tried to retrieve the status but is not logged in\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                    }
+
+                    if (memcmp(command, "SITE", 4) == 0) {
+                        if (memcmp(response, "200", 3) == 0) {
+                            const char* message = " has successfully executed the SITE-specific command\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "202", 3) == 0) {
+                            const char* message = " has tried to execute the SITE-specific command but it is not implemented\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "500", 3) == 0) {
+                            const char* message = " has tried to execute the SITE-specific command but the command failed due to a syntax error\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "501", 3) == 0) {
+                            const char* message = " has tried to execute the SITE-specific command but the command failed due to a parameter syntax error\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "530", 3) == 0) {
+                            const char* message = " has tried to execute the SITE-specific command but is not logged in\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                    }
+
+                    if (memcmp(command, "RNTO", 4) == 0) {
+                        if (memcmp(response, "250", 3) == 0) {
+                            const char* message = " has successfully renamed the file or directory\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "532", 3) == 0) {
+                            const char* message = " has tried to rename the file or directory but the command failed because the user is not logged in\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "553", 3) == 0) {
+                            const char* message = " has tried to rename the file or directory but the command failed due to a name issue (e.g., invalid or "
+                                                  "prohibited name)\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "500", 3) == 0) {
+                            const char* message = " has tried to rename the file or directory but the command failed due to a syntax error\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "501", 3) == 0) {
+                            const char* message = " has tried to rename the file or directory but the command failed due to a parameter syntax error\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "502", 3) == 0) {
+                            const char* message = " has tried to rename the file or directory but the command is not implemented\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "503", 3) == 0) {
+                            const char* message =
+                                  " has tried to rename the file or directory but the command sequence is incorrect (e.g., RNFR missing before RNTO)\n\0";
+                            message = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "421", 3) == 0) {
+                            const char* message = " has tried to rename the file or directory but the service is not available\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "530", 3) == 0) {
+                            const char* message = " has tried to rename the file or directory but the user is not logged in\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                    }
+
+                    if (memcmp(command, "RNFR", 4) == 0) {
+                        if (memcmp(response, "350", 3) == 0) {
+                            const char* message = " has successfully initiated the rename process and the requested file is ready for the RNTO command\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "450", 3) == 0) {
+                            const char* message =
+                                  " has tried to rename a file but the action was not taken because the file is unavailable (e.g., locked or busy)\n\0";
+                            message = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "550", 3) == 0) {
+                            const char* message =
+                                  " has tried to rename a file but the action failed because the file does not exist or permission is denied\n\0";
+                            message = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "500", 3) == 0) {
+                            const char* message = " has tried to rename a file but the command failed due to a syntax error\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "501", 3) == 0) {
+                            const char* message = " has tried to rename a file but the command failed due to a parameter syntax error\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "502", 3) == 0) {
+                            const char* message = " has tried to rename a file but the command is not implemented\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "421", 3) == 0) {
+                            const char* message = " has tried to rename a file but the service is not available\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "530", 3) == 0) {
+                            const char* message = " has tried to rename a file but the user is not logged in\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                    }
+
+                    if (memcmp(command, "SIZE", 4) == 0) {
+                        if (memcmp(response, "200", 3) == 0) {
+                            const char* message = " has successfully executed the SIZE command. The size of the file is provided. File: ";
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message = appendConstChar(message, " (size: <unknown>)\n\0");
+                            message = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "213", 3) == 0) {
+                            const char* message = " has successfully retrieved the file size. File: ";
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, " (size: ");
+                            message             = appendUnsignedCharToConstChar(message, response + 4);
+                            message             = appendConstChar(message, " bytes)\n\0");
+
+                            message = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                            map_size[command + 5] = response + 4;
+                        }
+                        if (memcmp(response, "550", 3) == 0) {
+                            const char* message = " has tried to retrieve the file size, but the file does not exist or permission is denied. File: ";
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, " (error: file not found or access denied)\n\0");
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "500", 3) == 0) {
+                            const char* message = " has tried to retrieve the file size, but the command failed due to a syntax error. File: ";
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, " (error: syntax issue)\n\0");
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "501", 3) == 0) {
+                            const char* message = " has tried to retrieve the file size, but the command failed due to a parameter syntax error. File: ";
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, " (error: incorrect parameters)\n\0");
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "530", 3) == 0) {
+                            const char* message = " has tried to retrieve the file size, but the user is not logged in. File: ";
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, " (error: not logged in)\n\0");
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "421", 3) == 0) {
+                            const char* message = " has tried to retrieve the file size, but the service is temporarily unavailable. File: ";
+                            message             = appendUnsignedCharToConstChar(message, command + 5);
+                            message             = appendConstChar(message, " (error: service unavailable)\n\0");
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                    }
+
+                    if (memcmp(command, "MLST", 4) == 0) {
+                        if (memcmp(response, "250", 3) == 0) {
+                            const char* message = " has successfully executed the MLST command, and the information about the requested file is provided\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "150", 3) == 0) {
+                            const char* message = " has initiated the MLST command, and data transfer is starting\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "226", 3) == 0) {
+                            const char* message = " has successfully completed the MLST command, and the data transfer is finished\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "450", 3) == 0) {
+                            const char* message = " has tried to execute the MLST command, but the action was not taken because the file is unavailable (e.g., "
+                                                  "locked or busy)\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "421", 3) == 0) {
+                            const char* message = " has tried to execute the MLST command, but the service is not available\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "500", 3) == 0) {
+                            const char* message = " has tried to execute the MLST command, but it failed due to a syntax error\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "501", 3) == 0) {
+                            const char* message = " has tried to execute the MLST command, but it failed due to a parameter syntax error\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "530", 3) == 0) {
+                            const char* message = " has tried to execute the MLST command, but the user is not logged in\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "553", 3) == 0) {
+                            const char* message = " has tried to execute the MLST command, but it failed due to an invalid file or directory name\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "503", 3) == 0) {
+                            const char* message = " has tried to execute the MLST command, but the command sequence is incorrect\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "504", 3) == 0) {
+                            const char* message = " has tried to execute the MLST command, but it failed because the parameter is not implemented\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                    }
+
+                    if (memcmp(command, "MLSD", 4) == 0) {
+                        if (memcmp(response, "250", 3) == 0) {
+                            const char* message = " has successfully executed the MLSD command, and the directory listing is provided\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "150", 3) == 0) {
+                            const char* message = " has initiated the MLSD command, and data transfer is starting\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "226", 3) == 0) {
+                            const char* message = " has successfully completed the MLSD command, and the data transfer is finished\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "450", 3) == 0) {
+                            const char* message = " has tried to execute the MLSD command, but the action was not taken because the directory is unavailable "
+                                                  "(e.g., locked or busy)\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "421", 3) == 0) {
+                            const char* message = " has tried to execute the MLSD command, but the service is not available\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "500", 3) == 0) {
+                            const char* message = " has tried to execute the MLSD command, but it failed due to a syntax error\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "501", 3) == 0) {
+                            const char* message = " has tried to execute the MLSD command, but it failed due to a parameter syntax error\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "530", 3) == 0) {
+                            const char* message = " has tried to execute the MLSD command, but the user is not logged in\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "553", 3) == 0) {
+                            const char* message = " has tried to execute the MLSD command, but it failed due to an invalid file or directory name\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "503", 3) == 0) {
+                            const char* message = " has tried to execute the MLSD command, but the command sequence is incorrect\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "504", 3) == 0) {
+                            const char* message = " has tried to execute the MLSD command, but it failed because the parameter is not implemented\n\0";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                    }
+
 
                     /*
                     if (!searchIfCommandExists(command, ftp_transfer_parameter_commands) && !searchIfCommandExists(command, ftp_access_control_commands) &&
@@ -1576,6 +1976,23 @@ PayloadDataParserInterface* FTP::FTPParser::ParsePayload(const PayloadInformatio
 
     applicationLayers.emplace_back(std::move(summaryLayer));
 
+    for (auto it : map_size) {
+        const char* message = "";
+        message             = appendUnsignedCharToConstChar(message, it.first);
+        message             = appendConstChar(message, ": ");
+        message             = appendUnsignedCharToConstChar(message, it.second);
+        message             = appendConstChar(message, " bytes\n\0");
+        appendToUnsignedChar(size_file, size_file_size, message);
+    }
+
+    if (!map_size.empty() && size_file != 0) {
+        size_layer.payload.size     = strlen(reinterpret_cast<const char*>(size_file)) + 1;
+        size_layer.payload.location = new uint8[size_layer.payload.size + 1];
+        memcpy(size_layer.payload.location, size_file, size_layer.payload.size + 1);
+    }
+
+    applicationLayers.emplace_back(std::move(size_layer));
+
     const char* filesDownloadedSummary = "";
     for (const auto& pair : filesDownloaded) {
         filesDownloadedSummary = appendConstChar(filesDownloadedSummary, reinterpret_cast<const char*>(pair.first));
@@ -1597,7 +2014,5 @@ PayloadDataParserInterface* FTP::FTPParser::ParsePayload(const PayloadInformatio
         applicationLayers.emplace_back(std::move(filesDownloadedLayer));
     }
     
-
-
     return this;
 }
