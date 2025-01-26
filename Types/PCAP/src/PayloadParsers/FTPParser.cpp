@@ -140,7 +140,7 @@ PayloadDataParserInterface* FTP::FTPParser::ParsePayload(const PayloadInformatio
     unsigned char* command   = nullptr;
     unsigned char* response  = nullptr;
     unsigned char* summary   = nullptr;
-    unsigned char* size_file = nullptr; 
+    const char* size_file    = ""; 
     size_t summary_size      = 0;
     size_t size_file_size    = 0;
     unsigned char* username  = nullptr;
@@ -155,6 +155,27 @@ PayloadDataParserInterface* FTP::FTPParser::ParsePayload(const PayloadInformatio
                         response = new unsigned char[startPtr - startline];
                         std::memcpy(response, startline, startPtr - startline);
                         response[startPtr - startline] = '\0';
+                        if (*(response + 3) == '-') {
+                            const uint8* startline2 = startPtr;
+                            while (startPtr < endPtr) {
+                                if (*startPtr == 0x0D || *startPtr == 0x0a) {
+                                    unsigned char* response2 = nullptr;
+                                    response2                = new unsigned char[startPtr - startline2];
+                                    std::memcpy(response2, startline2, startPtr - startline2);
+                                    response2[startPtr - startline2] = '\0';
+                                    if (*(response) == *(response2) and *(response + 1) == *(response2 + 1) and *(response + 2) == *(response2 + 2) and
+                                        *(response2 + 3) != '-') {
+                                        response = new unsigned char[startPtr - startline];
+                                        std::memcpy(response, startline, startPtr - startline);
+                                        response[startPtr - startline] = '\0';
+                                        break;
+                                    }
+                                    startline2 = startPtr + 1;
+                                }
+                                startPtr++;
+                            }
+                        }
+
                         isACommand                     = 0;
                     } else {
                         command = new unsigned char[startPtr - startline];
@@ -165,6 +186,26 @@ PayloadDataParserInterface* FTP::FTPParser::ParsePayload(const PayloadInformatio
                     response = new unsigned char[startPtr - startline];
                     std::memcpy(response, startline, startPtr - startline);
                     response[startPtr - startline] = '\0';
+                    if (*(response + 3) == '-') {
+                        const uint8* startline2 = startPtr;
+                        while (startPtr < endPtr) {
+                            if (*startPtr == 0x0D || *startPtr == 0x0a) {
+                                unsigned char* response2 = nullptr;
+                                response2                = new unsigned char[startPtr - startline2];
+                                std::memcpy(response2, startline2, startPtr - startline2);
+                                response2[startPtr - startline2] = '\0';
+                                if (*(response) == *(response2) and *(response + 1) == *(response2 + 1) and *(response + 2) == *(response2 + 2) and
+                                    *(response2 + 3) != '-') {
+                                    response = new unsigned char[startPtr - startline];
+                                    std::memcpy(response, startline, startPtr - startline);
+                                    response[startPtr - startline] = '\0';
+                                    break;
+                                }
+                                startline2 = startPtr + 1;
+                            }
+                            startPtr++;
+                        }
+                    }
                 }
 
                 startline = startPtr + 2;
@@ -830,70 +871,57 @@ PayloadDataParserInterface* FTP::FTPParser::ParsePayload(const PayloadInformatio
                     if (memcmp(command, "LIST", 4) == 0) {
                         const char* baseMessage = " has issued the LIST command to retrieve the directory/file information";
                         baseMessage             = appendToUnsignedChar(username, baseMessage);
-                        const char* filePath    = reinterpret_cast<const char*>(command + 5);
+                        const char* message     = std::strlen(reinterpret_cast<const char*>(command)) > 5 ? appendUnsignedCharToConstChar(baseMessage, command + 5) : baseMessage;
 
                         if (memcmp(response, "125", 3) == 0) {
-                            const char* message = appendConstChar(baseMessage, filePath);
                             message             = appendConstChar(message, ". Data connection is already open; transfer is starting.\n\0");
                             appendToUnsignedChar(summary, summary_size, message);
                         }
                         if (memcmp(response, "150", 3) == 0) {
-                            const char* message = appendConstChar(baseMessage, filePath);
                             message             = appendConstChar(message, ". File status okay; about to open data connection.\n\0");
                             appendToUnsignedChar(summary, summary_size, message);
                         }
                         if (memcmp(response, "226", 3) == 0) {
-                            const char* message = appendConstChar(baseMessage, filePath);
                             message             = appendConstChar(message, ". Closing data connection. Transfer completed successfully.\n\0");
                             appendToUnsignedChar(summary, summary_size, message);
                         }
                         if (memcmp(response, "250", 3) == 0) {
-                            const char* message = appendConstChar(baseMessage, filePath);
                             message             = appendConstChar(message, ". Requested file action okay and completed.\n\0");
                             appendToUnsignedChar(summary, summary_size, message);
                         }
                         if (memcmp(response, "425", 3) == 0) {
-                            const char* message = appendConstChar(baseMessage, filePath);
                             message             = appendConstChar(message, ". Cannot open data connection.\n\0");
                             appendToUnsignedChar(summary, summary_size, message);
                         }
                         if (memcmp(response, "426", 3) == 0) {
-                            const char* message = appendConstChar(baseMessage, filePath);
                             message             = appendConstChar(message, ". Connection closed; transfer aborted.\n\0");
                             appendToUnsignedChar(summary, summary_size, message);
                         }
                         if (memcmp(response, "451", 3) == 0) {
-                            const char* message = appendConstChar(baseMessage, filePath);
                             message             = appendConstChar(message, ". Action aborted: local error in processing.\n\0");
                             appendToUnsignedChar(summary, summary_size, message);
                         }
                         if (memcmp(response, "450", 3) == 0) {
-                            const char* message = appendConstChar(baseMessage, filePath);
                             message             = appendConstChar(message, ". Requested file action not taken. File is busy.\n\0");
                             appendToUnsignedChar(summary, summary_size, message);
                         }
                         if (memcmp(response, "530", 3) == 0) {
-                            const char* message = appendConstChar(baseMessage, filePath);
                             message             = appendConstChar(message, ". User is not logged in.\n\0");
                             appendToUnsignedChar(summary, summary_size, message);
                         }
                         if (memcmp(response, "500", 3) == 0) {
-                            const char* message = appendConstChar(baseMessage, filePath);
                             message             = appendConstChar(message, ". Syntax error in command.\n\0");
                             appendToUnsignedChar(summary, summary_size, message);
                         }
                         if (memcmp(response, "501", 3) == 0) {
-                            const char* message = appendConstChar(baseMessage, filePath);
                             message             = appendConstChar(message, ". Syntax error in parameters or arguments.\n\0");
                             appendToUnsignedChar(summary, summary_size, message);
                         }
                         if (memcmp(response, "502", 3) == 0) {
-                            const char* message = appendConstChar(baseMessage, filePath);
                             message             = appendConstChar(message, ". Command not implemented.\n\0");
                             appendToUnsignedChar(summary, summary_size, message);
                         }
                         if (memcmp(response, "421", 3) == 0) {
-                            const char* message = appendConstChar(baseMessage, filePath);
                             message             = appendConstChar(message, ". Service not available, closing control connection.\n\0");
                             appendToUnsignedChar(summary, summary_size, message);
                         }
@@ -1982,11 +2010,12 @@ PayloadDataParserInterface* FTP::FTPParser::ParsePayload(const PayloadInformatio
         message             = appendConstChar(message, ": ");
         message             = appendUnsignedCharToConstChar(message, it.second);
         message             = appendConstChar(message, " bytes\n\0");
-        appendToUnsignedChar(size_file, size_file_size, message);
+        size_file           = appendConstChar(size_file, message);
     }
 
-    if (!map_size.empty() && size_file != 0) {
-        size_layer.payload.size     = strlen(reinterpret_cast<const char*>(size_file)) + 1;
+    if (!map_size.empty() && strlen(size_file) != 0) {
+        size_file                   = appendConstChar(size_file, "\n");
+        size_layer.payload.size     = strlen(size_file) + 1;
         size_layer.payload.location = new uint8[size_layer.payload.size + 1];
         memcpy(size_layer.payload.location, size_file, size_layer.payload.size + 1);
     }
