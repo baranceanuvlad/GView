@@ -1,6 +1,5 @@
 
 #include "FTPParser.hpp"
-
 using namespace GView::Type::PCAP;
 
 void appendToUnsignedChar(unsigned char*& buffer, size_t& currentSize, const unsigned char* newData, size_t newDataSize)
@@ -86,6 +85,9 @@ PayloadDataParserInterface* FTP::FTPParser::ParsePayload(const PayloadInformatio
         return nullptr;
 
     auto& var = payloadInformation.payload->location;
+    char locationValue[4];                                               
+    std::memcpy(locationValue, payloadInformation.payload->location, 3); 
+    locationValue[3] = '\0';                                             
     if (memcmp(payloadInformation.payload->location, "220", 3) != 0 && memcmp(payloadInformation.payload->location, "120", 3) != 0 &&
         memcmp(payloadInformation.payload->location, "421", 3) != 0 && memcmp(payloadInformation.payload->location, "221", 3) != 0)
         return nullptr;
@@ -520,6 +522,420 @@ PayloadDataParserInterface* FTP::FTPParser::ParsePayload(const PayloadInformatio
                             appendToUnsignedChar(summary, summary_size, message);
                         }
                     }
+                    if (memcmp(command, "ACCT", 4) == 0) {
+                        if (memcmp(response, "230", 3) == 0) {
+                            const char* message = " has provided account information and logged in successfully\n";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "202", 3) == 0) {
+                            const char* message = " has issued an account command, but it was not necessary\n";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "530", 3) == 0) {
+                            const char* message = " has attempted to provide account information but is not logged in\n";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "500", 3) == 0) {
+                            const char* message = " has attempted to issue an account command, but it failed due to syntax error\n";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "501", 3) == 0) {
+                            const char* message = " has attempted to issue an account command, but it failed due to parameter issues\n";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "503", 3) == 0) {
+                            const char* message = " has attempted to issue an account command, but the sequence of commands was incorrect\n";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "421", 3) == 0) {
+                            const char* message = " has attempted to issue an account command, but the service is not available\n";
+                            message             = appendToUnsignedChar(username, message);
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                    }
+                    if (memcmp(command, "APPE", 4) == 0) {
+                        const char* baseMessage = " has issued the APPE (Append) command for file: ";
+                        baseMessage             = appendToUnsignedChar(username, baseMessage);
+                        const char* filePath    = reinterpret_cast<const char*>(command + 5);
+
+                        if (memcmp(response, "125", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, " and the transfer is starting.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "150", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, " and the file status is okay. Data connection is about to open.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "226", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, " and the file transfer is complete.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "250", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, " and the requested file action is complete.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "425", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, " but the data connection could not be opened.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "426", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, " but the connection was closed and the transfer was aborted.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "451", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, " but the action was aborted due to a local processing error.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "551", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, " but the action was aborted due to a page type unknown error.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "552", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, " but the action was aborted due to insufficient storage.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "530", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, " but the user is not logged in.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "550", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, " but the file is unavailable (e.g., not found, no access).\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "500", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, " but the command failed due to a syntax error.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "501", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, " but the command failed due to a parameter issue.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "502", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, " but the command is not implemented.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "421", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, " but the service is not available.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                    }
+                    if (memcmp(command, "LIST", 4) == 0) {
+                        const char* baseMessage = " has issued the LIST command to retrieve the directory/file information";
+                        baseMessage             = appendToUnsignedChar(username, baseMessage);
+                        const char* filePath    = reinterpret_cast<const char*>(command + 5);
+
+                        if (memcmp(response, "125", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Data connection is already open; transfer is starting.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "150", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". File status okay; about to open data connection.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "226", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Closing data connection. Transfer completed successfully.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "250", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Requested file action okay and completed.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "425", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Cannot open data connection.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "426", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Connection closed; transfer aborted.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "451", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Action aborted: local error in processing.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "450", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Requested file action not taken. File is busy.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "530", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". User is not logged in.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "500", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Syntax error in command.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "501", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Syntax error in parameters or arguments.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "502", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Command not implemented.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "421", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Service not available, closing control connection.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                    }
+
+                    if (memcmp(command, "NLST", 4) == 0) {
+                        const char* baseMessage = " has issued the NLST command to retrieve a list of file names";
+                        baseMessage                 = appendToUnsignedChar(username, baseMessage);
+                        const char* filePath    = reinterpret_cast<const char*>(command + 5);
+
+                        if (memcmp(response, "125", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Data connection is already open; transfer is starting.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "150", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". File status okay; about to open data connection.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "226", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Closing data connection. Transfer completed successfully.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "250", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Requested file action okay and completed.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "425", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Cannot open data connection.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "426", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Connection closed; transfer aborted.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "451", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Action aborted: local error in processing.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "450", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Requested file action not taken. File is busy.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "530", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". User is not logged in.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "500", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Syntax error in command.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "501", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Syntax error in parameters or arguments.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "502", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Command not implemented.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "421", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Service not available, closing control connection.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                    }
+                    if (memcmp(command, "STOR", 4) == 0) {
+                        const char* baseMessage = " has issued the STOR command to upload a file to the server";
+                        baseMessage             = appendToUnsignedChar(username, baseMessage);
+                        const char* filePath    = reinterpret_cast<const char*>(command + 5);
+
+                        if (memcmp(response, "125", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Data connection is already open; transfer is starting.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "150", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". File status okay; about to open data connection.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "226", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Transfer completed successfully; closing data connection.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "250", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Requested file action okay and completed.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "425", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Cannot open data connection.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "426", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Connection closed; transfer aborted.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "451", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Action aborted: local error in processing.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "450", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Requested file action not taken; file is busy.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "552", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Action aborted due to insufficient storage space.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "553", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Action aborted; file name not allowed.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "530", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". User is not logged in.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "500", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Syntax error in command.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "501", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Syntax error in parameters or arguments.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "421", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, filePath);
+                            message             = appendConstChar(message, ". Service not available, closing control connection.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                    }
+                    if (memcmp(command, "STOU", 4) == 0) {
+                        const char* baseMessage = " has issued the STOU command to store a file with a unique name";
+                        baseMessage             = appendToUnsignedChar(username, baseMessage);
+                        if (memcmp(response, "125", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, "");
+                            message             = appendConstChar(message, ". Data connection is already open; transfer is starting.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "150", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, "");
+                            message             = appendConstChar(message, ". File status okay; about to open data connection.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "226", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, "");
+                            message             = appendConstChar(message, ". Transfer completed successfully; closing data connection.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "250", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, "");
+                            message             = appendConstChar(message, ". File stored successfully with a unique name. Server response: ");
+                            message             = appendUnsignedCharToConstChar(message, response + 4);
+                            message             = appendConstChar(message, "\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "425", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, "");
+                            message             = appendConstChar(message, ". Cannot open data connection.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "426", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, "");
+                            message             = appendConstChar(message, ". Connection closed; transfer aborted.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "451", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, "");
+                            message             = appendConstChar(message, ". Action aborted: local error in processing.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "450", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, "");
+                            message             = appendConstChar(message, ". Requested file action not taken; file is busy.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "552", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, "");
+                            message             = appendConstChar(message, ". Action aborted due to insufficient storage space.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "553", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, "");
+                            message             = appendConstChar(message, ". Action aborted; file name not allowed.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "530", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, "");
+                            message             = appendConstChar(message, ". User is not logged in.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "500", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, "");
+                            message             = appendConstChar(message, ". Syntax error in command.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "501", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, "");
+                            message             = appendConstChar(message, ". Syntax error in parameters or arguments.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                        if (memcmp(response, "421", 3) == 0) {
+                            const char* message = appendConstChar(baseMessage, "");
+                            message             = appendConstChar(message, ". Service not available, closing control connection.\n\0");
+                            appendToUnsignedChar(summary, summary_size, message);
+                        }
+                    }
+
 
                     /*
                     if (!searchIfCommandExists(command, ftp_transfer_parameter_commands) && !searchIfCommandExists(command, ftp_access_control_commands) &&
